@@ -1,0 +1,19 @@
+package com.example.productapiintegration.config;
+
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+@Component
+public class AccessTokenStore {
+    private final AtomicReference<String> token = new AtomicReference<>();
+
+    public String getToken() {
+        return token.get();
+    }
+
+    public void setToken(String tokenValue) {
+        token.set(tokenValue);
+    }
+}
+
