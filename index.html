@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Product Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a27;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --text: #e8e8f0;
+    --text-dim: #7c7c9a;
+    --success: #43d98f;
+    --error: #ff5e5e;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed; top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(108,99,255,0.10) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; bottom: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,101,132,0.07) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .shell {
+    position: relative; z-index: 1;
+    max-width: 1200px; margin: 0 auto; padding: 36px 24px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.5rem;
+    background: linear-gradient(135deg,#fff 30%,var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo em { -webkit-text-fill-color: var(--accent2); font-style: normal; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .port-badge {
+    font-size: .72rem; color: var(--text-dim);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 99px; padding: 5px 14px;
+  }
+
+  /* CONFIG BAR */
+  .config-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 24px;
+    display: flex; gap: 12px; align-items: flex-end; margin-bottom: 28px;
+  }
+  .config-bar .fg { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .config-bar label { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); }
+  .config-bar input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: 'DM Sans',sans-serif; font-size: .88rem;
+    padding: 9px 13px; outline: none; transition: border-color .2s;
+  }
+  .config-bar input:focus { border-color: var(--accent); }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 5px; margin-bottom: 28px; width: fit-content;
+  }
+  .tab {
+    font-family: 'Syne',sans-serif; font-size: .83rem; font-weight: 700;
+    padding: 9px 22px; border-radius: 9px; border: none; cursor: pointer;
+    transition: all .2s; color: var(--text-dim); background: transparent;
+    letter-spacing: .02em;
+  }
+  .tab.active { background: var(--accent); color: #fff; box-shadow: 0 4px 18px rgba(108,99,255,.35); }
+  .tab:not(.active):hover { color: var(--text); background: var(--surface2); }
+
+  /* SECTIONS */
+  .section { display: none; animation: fadeUp .3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ACTION BAR */
+  .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .section-title { font-family: 'Syne',sans-serif; font-size: 1.1rem; font-weight: 700; }
+
+  /* BUTTONS */
+  .btn {
+    font-family: 'Syne',sans-serif; font-size: .8rem; font-weight: 700;
+    letter-spacing: .04em; padding: 9px 20px; border-radius: 10px; border: none;
+    cursor: pointer; transition: all .18s; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 18px rgba(108,99,255,.28); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(108,99,255,.42); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .4; cursor: not-allowed !important; transform: none !important; }
+
+  /* PRODUCT GRID */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(250px,1fr)); gap: 18px; }
+  .product-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .product-card:hover { border-color: rgba(108,99,255,.4); transform: translateY(-3px); }
+  .product-img-wrap {
+    height: 150px; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    position: relative;
+  }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .no-img { font-size: 2.5rem; opacity: .25; }
+  .img-loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+  }
+  .img-spinner { width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  .product-body { padding: 14px; }
+  .product-id { font-size: .62rem; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px; }
+  .product-name { font-family: 'Syne',sans-serif; font-weight: 700; font-size: .95rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-desc { font-size: .78rem; color: var(--text-dim); margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-footer { display: flex; align-items: center; justify-content: space-between; }
+  .product-price { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--success); }
+  .upload-mini {
+    font-size: .68rem; padding: 4px 10px; border-radius: 7px;
+    border: 1px dashed var(--border); background: transparent; color: var(--text-dim);
+    cursor: pointer; transition: all .2s; font-family: 'Syne',sans-serif; font-weight: 600;
+  }
+  .upload-mini:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* EMPTY / LOADER */
+  .empty { text-align: center; padding: 70px 24px; color: var(--text-dim); }
+  .empty-icon { font-size: 3rem; margin-bottom: 14px; }
+  .empty h3 { font-family: 'Syne',sans-serif; font-size: 1.1rem; margin-bottom: 6px; color: var(--text); }
+  .empty p { font-size: .85rem; }
+  .loader-wrap { display: flex; justify-content: center; padding: 60px; }
+  .spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* FORM */
+  .form-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 30px; max-width: 580px;
+  }
+  .form-panel h2 { font-family: 'Syne',sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 22px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fg { display: flex; flex-direction: column; gap: 6px; }
+  .fg.full { grid-column: 1/-1; }
+  .fg label { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); }
+  .fg input, .fg select, .fg textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: 'DM Sans',sans-serif; font-size: .88rem;
+    padding: 10px 13px; outline: none; transition: border-color .2s; width: 100%;
+  }
+  .fg select option { background: var(--bg); }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); }
+  .fg textarea { resize: vertical; min-height: 85px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  /* CATEGORIES TABLE */
+  .cat-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cat-table { width: 100%; border-collapse: collapse; }
+  .cat-table th { text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); padding: 10px 16px; border-bottom: 1px solid var(--border); font-family: 'Syne',sans-serif; }
+  .cat-table td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: .88rem; }
+  .cat-table tr:last-child td { border-bottom: none; }
+  .cat-table tr:hover td { background: var(--surface2); }
+  .cat-id { color: var(--text-dim); font-size: .78rem; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65);
+    z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px; max-width: 440px; width: 90%;
+    animation: fadeUp .25s ease;
+  }
+  .modal h3 { font-family: 'Syne',sans-serif; font-weight: 700; margin-bottom: 16px; font-size: 1rem; }
+  .modal-product-info { color: var(--text-dim); font-size: .82rem; margin-bottom: 16px; background: var(--surface2); border-radius: 10px; padding: 10px 14px; }
+  .modal-product-info strong { color: var(--text); }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 28px; text-align: center; cursor: pointer;
+    transition: all .2s; background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(108,99,255,.04); }
+  .upload-zone input { display: none; }
+  .upload-zone-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .upload-zone p { font-size: .82rem; color: var(--text-dim); }
+  .upload-zone strong { color: var(--accent); }
+  .file-preview {
+    display: none; align-items: center; gap: 10px;
+    background: var(--surface2); border-radius: 10px;
+    padding: 10px 14px; font-size: .8rem; margin-top: 12px;
+  }
+  .file-preview.show { display: flex; }
+  .file-preview img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+  .fname { color: var(--text); font-weight: 500; }
+  .fsize { color: var(--text-dim); font-size: .72rem; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* RESULT BOX */
+  .result-ok { background: rgba(67,217,143,.1); border: 1px solid rgba(67,217,143,.3); border-radius: 10px; padding: 12px 14px; font-size: .82rem; color: var(--success); margin-top: 16px; }
+  .result-err { background: rgba(255,94,94,.1); border: 1px solid rgba(255,94,94,.3); border-radius: 10px; padding: 12px 14px; font-size: .82rem; color: var(--error); margin-top: 16px; }
+
+  /* TOAST */
+  #toast-root { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 18px; font-size: .83rem;
+    display: flex; align-items: center; gap: 10px;
+    animation: toastIn .25s ease; max-width: 320px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .toast.success { border-color: rgba(67,217,143,.35); }
+  .toast.error   { border-color: rgba(255,94,94,.35); }
+  @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+  @media (max-width:600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .product-grid { grid-template-columns: 1fr; }
+    header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">Product<em>Manager</em></div>
+    <div class="port-badge">Spring Boot Proxy · Port 8082</div>
+    <div id="auth-status" style="color: lightgreen; font-size: 14px;"></div>
+  </header>
+
+  <!-- CONFIG BAR -->
+  <div class="config-bar">
+    <div class="fg">
+      <label>Backend Base URL</label>
+      <input id="baseUrl" type="text" value="http://localhost:8082/api-proxy"/>
+    </div>
+    <button class="btn btn-outline" onclick="loadProducts();loadCategories()">🔄 Refresh All</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('products',this)">📦 Products</button>
+    <button class="tab" onclick="switchTab('add',this)">➕ Add Product</button>
+    <button class="tab" onclick="switchTab('categories',this)">🗂 Categories</button>
+  </div>
+
+  <!-- ─── TAB: PRODUCTS ─── -->
+  <div class="section active" id="tab-products">
+    <div class="action-bar">
+      <span class="section-title">All Products</span>
+      <button class="btn btn-primary" onclick="loadProducts()">🔄 Load Items</button>
+    </div>
+    <div id="products-area">
+      <div class="empty">
+        <div class="empty-icon">📦</div>
+        <h3>No products loaded</h3>
+        <p>Click "Load Items" to fetch from the backend.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: ADD PRODUCT ─── -->
+  <div class="section" id="tab-add">
+    <div class="form-panel">
+      <h2>➕ Add New Product</h2>
+      <div class="form-grid">
+        <div class="fg">
+          <label>Price (₹)</label>
+          <input id="f-price" type="number" step="0.01" placeholder="0.00"/>
+        </div>
+        <div class="fg">
+          <label>&nbsp;</label>
+          <!-- spacer -->
+        </div>
+        <div class="fg full">
+          <label>Product Name *</label>
+          <input id="f-name" type="text" placeholder="Enter product name"/>
+        </div>
+        <div class="fg full">
+          <label>Description</label>
+          <textarea id="f-desc" placeholder="Enter description..."></textarea>
+        </div>
+        <div class="fg full">
+          <label>Category *</label>
+          <select id="f-category">
+            <option value="">-- Select Category --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="save-btn" onclick="saveProduct()">💾 Save Product</button>
+        <button class="btn btn-outline" onclick="clearForm()">✕ Clear</button>
+      </div>
+      <div id="save-result"></div>
+    </div>
+  </div>
+
+  <!-- ─── TAB: CATEGORIES ─── -->
+  <div class="section" id="tab-categories">
+    <div class="action-bar">
+      <span class="section-title">Categories</span>
+      <button class="btn btn-primary" onclick="loadCategories()">🔄 Load Categories</button>
+    </div>
+    <div id="categories-area">
+      <div class="empty">
+        <div class="empty-icon">🗂</div>
+        <h3>No categories loaded</h3>
+        <p>Click "Load Categories" to fetch.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<!-- ─── UPLOAD IMAGE MODAL ─── -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal">
+    <h3>📸 Upload Product Image</h3>
+    <div class="modal-product-info" id="modal-info">—</div>
+
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('img-file').click()">
+      <input type="file" id="img-file" accept="image/*" onchange="onFileSelect(this)"/>
+      <div class="upload-zone-icon">🖼️</div>
+      <p><strong>Click to browse</strong> or drag &amp; drop</p>
+      <p style="margin-top:4px;font-size:.74rem">PNG, JPG, WEBP · Max 5 MB</p>
+    </div>
+
+    <div class="file-preview" id="file-preview">
+      <img id="preview-img" src="" alt="preview"/>
+      <div>
+        <div class="fname" id="preview-name"></div>
+        <div class="fsize" id="preview-size"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="upload-btn" onclick="doUpload()" disabled>⬆️ Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-root"></div>
+
+<script>
+/* ─── STATE ─── */
+let uploadTargetId = null;
+let selectedFile   = null;
+let allCategories  = [];
+
+/* ─── UTILS ─── */
+const $ = id => document.getElementById(id);
+const baseUrl = () => $('baseUrl').value.replace(/\/$/, '');
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span><span>${msg}</span>`;
+  $('toast-root').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  $('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function spinner() {
+  return '<div class="loader-wrap"><div class="spinner"></div></div>';
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* ─── TOKEN (Spring Boot proxy handles auth internally) ─── */
+function getToken() { return localStorage.getItem('token') || ''; }
+function setToken(t) { localStorage.setItem('token', t); }
+function showLogin() {}  // no-op — no login overlay
+
+/* ─── FETCH HELPER ─── */
+function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+  return fetch(url, { ...options, headers });
+}
+
+/* ─── PRODUCTS ─── */
+async function loadProducts() {
+  $('products-area').innerHTML = spinner();
+  try {
+    const res = await authFetch(`${baseUrl()}/items`);
+    if (res.status === 401) { throw new Error('401 Unauthorized — Spring Boot restart தேவை'); }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const products = await res.json();
+    renderProducts(products);
+    toast(`${products.length} product(s) loaded`);
+  } catch (e) {
+    $('products-area').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Failed to load</h3><p>${e.message}</p></div>`;
+    toast('Failed: ' + e.message, 'error');
+  }
+}
+
+function renderProducts(products) {
+  if (!products.length) {
+    $('products-area').innerHTML = `<div class="empty"><div class="empty-icon">📦</div><h3>No products found</h3><p>Add a product to get started.</p></div>`;
+    return;
+  }
+  const cards = products.map(p => `
+    <div class="product-card">
+      <div class="product-img-wrap" id="img-wrap-${p.id}">
+        <div class="img-loading" id="img-loading-${p.id}">
+          <div class="img-spinner"></div>
+        </div>
+        <span class="no-img" id="img-placeholder-${p.id}" style="display:none;">🖼️</span>
+      </div>
+      <div class="product-body">
+        <div class="product-id">ID · ${p.id ?? '—'}</div>
+        <div class="product-name" title="${esc(p.name)}">${esc(p.name) || '—'}</div>
+        <div class="product-desc">${esc(p.description) || 'No description'}</div>
+        <div class="product-footer">
+          <div class="product-price">${p.price != null ? '₹ ' + Number(p.price).toFixed(2) : '—'}</div>
+          <button class="upload-mini" onclick="openModal(${p.id},'${esc(p.name)}')">📸 Image</button>
+        </div>
+      </div>
+    </div>`).join('');
+  $('products-area').innerHTML = `<div class="product-grid">${cards}</div>`;
+  // ✅ FIX: Now actually fetch images after rendering
+  products.forEach(p => { if (p.id != null) fetchImage(p.id); });
+}
+
+/* ─── Image fetch ─── */
+async function fetchImage(itemId) {
+  const showPlaceholder = () => {
+    const l = $(`img-loading-${itemId}`);
+    const p = $(`img-placeholder-${itemId}`);
+    if (l) l.remove();
+    if (p) p.style.display = '';
+  };
+  try {
+    const res = await authFetch(`${baseUrl()}/items/${itemId}/image`);
+    if (!res.ok) { showPlaceholder(); return; }  // 400 = no image, silent
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) { showPlaceholder(); return; }
+    const wrap = $(`img-wrap-${itemId}`);
+    if (!wrap) return;
+    const url = URL.createObjectURL(blob);
+    const l = $(`img-loading-${itemId}`);
+    const p = $(`img-placeholder-${itemId}`);
+    if (l) l.remove();
+    if (p) p.remove();
+    const img = document.createElement('img');
+    img.src = url; img.alt = 'product';
+    wrap.appendChild(img);
+  } catch (_) { showPlaceholder(); }
+}
+
+/* ─── CATEGORIES ─── */
+async function loadCategories() {
+  $('categories-area').innerHTML = spinner();
+  try {
+    const res = await authFetch(`${baseUrl()}/items/categories`);
+    if (res.status === 401) { throw new Error('401 Unauthorized'); }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const raw = await res.json();
+    // raw might be array or wrapped object
+    const arr = Array.isArray(raw) ? raw : (raw.data || raw.result || raw.categories || raw.items || []);
+    // Debug logs
+    console.log('[Categories raw]', JSON.stringify(raw));
+    if (arr.length > 0) {
+      console.log('[Category keys]', Object.keys(arr[0]));
+      console.log('[Category first item]', JSON.stringify(arr[0]));
+    }
+    // Normalize: find id and name from whatever fields exist
+    allCategories = arr.map(c => {
+      const id = c.categoryId ?? c.id ?? c.Id ?? c.CategoryId ?? c.itemCategoryId ?? c.catId ?? null;
+      // Try every key that might be a name
+      const nameKeys = ['name','categoryName','CategoryName','title','label',
+                        'itemCategory','ItemCategory','category','Category',
+                        'categoryTitle','cat_name','catName'];
+      let name = '—';
+      for (const k of nameKeys) { if (c[k] != null) { name = String(c[k]); break; } }
+      // last resort: any string value that isn't the id
+      if (name === '—') {
+        for (const [k,v] of Object.entries(c)) {
+          if (typeof v === 'string' && v.length > 0 && k.toLowerCase() !== 'id') {
+            name = v; break;
+          }
+        }
+      }
+      return { categoryId: id, name };
+    });
+    renderCategories(allCategories);
+    populateCatSelect();
+    toast(`${allCategories.length} category/categories loaded`);
+  } catch (e) {
+    $('categories-area').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>Failed to load</h3><p>${e.message}</p></div>`;
+    toast('Failed: ' + e.message, 'error');
+  }
+}
+
+function renderCategories(cats) {
+  if (!cats.length) {
+    $('categories-area').innerHTML = `<div class="empty"><div class="empty-icon">🗂</div><h3>No categories</h3></div>`;
+    return;
+  }
+  const rows = cats.map(c => `<tr><td class="cat-id">${c.categoryId ?? '—'}</td><td>${esc(c.name) || '—'}</td></tr>`).join('');
+  $('categories-area').innerHTML = `
+    <div class="cat-wrap">
+      <table class="cat-table">
+        <thead><tr><th>ID</th><th>Name</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function populateCatSelect() {
+  const sel = $('f-category');
+  sel.innerHTML = '<option value="">-- Select Category --</option>';
+  allCategories.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.categoryId;
+    o.textContent = `${c.name} (ID: ${c.categoryId})`;
+    sel.appendChild(o);
+  });
+}
+
+/* ─── Save Product ─── */
+async function saveProduct() {
+  const name    = $('f-name').value.trim();
+  const priceVal = $('f-price').value;
+  const catVal  = $('f-category').value;
+  const desc    = $('f-desc').value.trim();
+
+  if (!name)    { toast('Product name கொடுக்கணும்!', 'error'); return; }
+  if (!priceVal || isNaN(parseFloat(priceVal))) { toast('Price கொடுக்கணும்!', 'error'); return; }
+  if (!catVal)  { toast('Category select பண்ணணும்!', 'error'); return; }
+
+  const catId = parseInt(catVal, 10);
+  const price = parseFloat(priceVal);
+
+  // Remote API field name variants - send all common ones
+  const payload = {
+    name:            name,
+    itemName:        name,
+    description:     desc || "",
+    itemDescription: desc || "",
+    price:           price,
+    itemPrice:       price,
+    categoryId:      catId,
+    itemCategoryId:  catId
+  };
+
+  const btn = $('save-btn');
+  const resultEl = $('save-result');
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving...';
+  resultEl.innerHTML = '';
+
+  try {
+    const res = await authFetch(`${baseUrl()}/items/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 401) { throw new Error('401 Unauthorized'); }
+
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch(_) { data = { message: text }; }
+
+    if (res.ok && data.success !== false) {
+      const savedId = data.itemId || (data.item && data.item.itemId) || '';
+      resultEl.innerHTML = `<div class="result-ok">&#x2705; Product saved!${savedId ? ' (ID: ' + savedId + ')' : ''}</div>`;
+      toast('Product saved! 🎉');
+      clearForm();
+      loadProducts();
+    } else {
+      // Spring Boot ApiErrorResponse detail field has remote error
+      const errMsg = data.detail || data.message || data.error || ('HTTP ' + res.status);
+      throw new Error(errMsg);
+    }
+  } catch (e) {
+    resultEl.innerHTML = `<div class="result-err">&#x274C; Error: ${esc(e.message)}</div>`;
+    toast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Save Product';
+  }
+}
+
+function clearForm() {
+  ['f-name','f-desc','f-price'].forEach(id => $(id).value = '');
+  $('f-category').selectedIndex = 0;
+  $('save-result').innerHTML = '';
+}
+
+/* ─── IMAGE UPLOAD MODAL ─── */
+function openModal(itemId, itemName) {
+  uploadTargetId = itemId;
+  selectedFile = null;
+  $('img-file').value = '';
+  $('file-preview').classList.remove('show');
+  $('upload-btn').disabled = true;
+  $('modal-info').innerHTML = `<strong>Product:</strong> ${itemName} &nbsp;·&nbsp; <strong>ID:</strong> ${itemId}`;
+  $('upload-modal').classList.add('show');
+}
+
+function closeModal() {
+  $('upload-modal').classList.remove('show');
+  uploadTargetId = null; selectedFile = null;
+}
+
+function onFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  selectedFile = file;
+  $('preview-name').textContent = file.name;
+  $('preview-size').textContent = fmtSize(file.size);
+  const reader = new FileReader();
+  reader.onload = e => { $('preview-img').src = e.target.result; };
+  reader.readAsDataURL(file);
+  $('file-preview').classList.add('show');
+  $('upload-btn').disabled = false;
+}
+
+// Drag & drop
+const dz = $('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(file);
+    $('img-file').files = dt.files;
+    onFileSelect($('img-file'));
+  }
+});
+
+$('upload-modal').addEventListener('click', e => { if (e.target === $('upload-modal')) closeModal(); });
+
+/* ─── FIX 3: Upload Image — response parsing improved ─── */
+async function doUpload() {
+  if (!selectedFile || !uploadTargetId) return;
+  const btn = $('upload-btn');
+  btn.disabled = true; btn.textContent = '⏳ Uploading…';
+
+  const form = new FormData();
+  form.append('file', selectedFile);
+
+  try {
+    const res = await authFetch(`${baseUrl()}/items/${uploadTargetId}/upload-image`, {
+      method: 'POST', body: form
+    });
+
+    if (res.status === 401) { throw new Error('401 Unauthorized'); }
+
+    let data = {};
+    const text = await res.text();
+    try { data = JSON.parse(text); } catch(_) { data = { message: text }; }
+
+    if (res.ok && data.success !== false) {
+      toast('Image uploaded! 🖼️');
+      closeModal();
+      // ✅ Refresh that card's image
+      const wrap = $(`img-wrap-${uploadTargetId}`);
+      if (wrap) {
+        wrap.innerHTML = `<div class="img-loading" id="img-loading-${uploadTargetId}"><div class="img-spinner"></div></div><span class="no-img" id="img-placeholder-${uploadTargetId}" style="display:none;">🖼️</span>`;
+      }
+      fetchImage(uploadTargetId);
+    } else {
+      throw new Error(data.message || data.error || 'Status ' + res.status);
+    }
+  } catch (e) {
+    toast('Upload failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '⬆️ Upload';
+  }
+}
+
+async function checkAuthStatus() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    $('auth-status').innerHTML = "Not Logged In";
+    return;
+  }
+
+  try {
+    const res = await authFetch(`${baseUrl()}/items`);
+
+    if (res.ok) {
+      $('auth-status').innerHTML = " Authenticated";
+    } else {
+      $('auth-status').innerHTML = " Invalid Token";
+    }
+  } catch {
+    $('auth-status').innerHTML = " Error";
+  }
+}
+
+/* ─── INIT ─── */
+checkAuthStatus();
+loadProducts();
+loadCategories();
+</script>
+</body>
+</html>
