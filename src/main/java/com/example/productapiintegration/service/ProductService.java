@@ -61,23 +61,69 @@ public class ProductService {
         }
     }
 
-    public List<Category> getCategories() {
+public List<Category> getCategories() {
         String url = apiProperties.baseUrl() + ApiEndpoints.GET_ITEM_CATEGORIES;
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
             String body = response.getBody();
             if (body == null) return List.of();
 
-            List<CategoryDto> categories = RemoteJsonParser.parseList(body, objectMapper, CategoryDto.class);
-            return categories.stream()
-                    .map(dto -> Category.builder()
-                            .categoryId(dto.getCategoryId())
-                            .name(dto.getName())
-                            .build())
-                    .toList();
-        } catch (HttpStatusCodeException ex) {
-            throw new RemoteApiException("Failed to fetch categories", ex.getRawStatusCode(), ex.getResponseBodyAsString());
+            // Parse raw JSON and extract id+name flexibly — remote API field names are inconsistent
+            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+            com.fasterxml.jackson.databind.JsonNode arr = root.isArray() ? root
+                    : (root.get("data") != null ? root.get("data")
+                    : root.get("result") != null ? root.get("result")
+                    : root.get("categories") != null ? root.get("categories")
+                    : root);
+
+            java.util.List<Category> result = new java.util.ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode node : arr) {
+                Long id = extractLong(node, "categoryId","id","Id","CategoryId","itemCategoryId","catId");
+                String name = extractString(node, "name","categoryName","CategoryName","title",
+                        "itemCategory","ItemCategory","category","Category","label","catName");
+                result.add(Category.builder().categoryId(id).name(name).build());
+            }
+            return result;
+        } catch (Exception ex) {
+            throw new RemoteApiException("Failed to fetch categories", 500, ex.getMessage());
         }
+    }
+
+    private Long extractLong(com.fasterxml.jackson.databind.JsonNode node, String... keys) {
+        for (String k : keys) {
+            com.fasterxml.jackson.databind.JsonNode v = node.get(k);
+            if (v != null && !v.isNull()) {
+                try { return v.asLong(); } catch (Exception ignored) {}
+            }
+        }
+        // case-insensitive fallback
+        node.fields().forEachRemaining(e -> {});
+        for (var it = node.fields(); it.hasNext();) {
+            var e = it.next();
+            for (String k : keys) {
+                if (e.getKey().equalsIgnoreCase(k) && !e.getValue().isNull()) {
+                    try { return e.getValue().asLong(); } catch (Exception ignored) {}
+                }
+            }
+        }
+        return null;
+    }
+
+    private String extractString(com.fasterxml.jackson.databind.JsonNode node, String... keys) {
+        for (String k : keys) {
+            com.fasterxml.jackson.databind.JsonNode v = node.get(k);
+            if (v != null && !v.isNull() && v.isTextual()) return v.asText();
+        }
+        // case-insensitive fallback
+        for (var it = node.fields(); it.hasNext();) {
+            var e = it.next();
+            for (String k : keys) {
+                if (e.getKey().equalsIgnoreCase(k) && e.getValue().isTextual()) {
+                    return e.getValue().asText();
+                }
+            }
+        }
+        return null;
     }
 
     public ProductImageResponse getProductImage(Long itemId) {
@@ -97,6 +143,14 @@ public class ProductService {
     public ItemSaveResponseDto saveProduct(ItemSaveRequestDto request) {
         String url = apiProperties.baseUrl() + ApiEndpoints.SAVE_ITEM;
         try {
+            // Remote API may use different field name conventions (itemName, itemPrice, etc.)
+            // Send all common variants via the extra map so the remote API can bind whichever it expects.
+            request.setExtra("itemName",        request.getName());
+            request.setExtra("itemDescription", request.getDescription());
+            request.setExtra("itemPrice",        request.getPrice());
+            request.setExtra("itemCategoryId",   request.getCategoryId());
+            request.setExtra("categoryId",       request.getCategoryId());
+
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             String body = response.getBody();
             return RemoteJsonParser.parseObject(body, objectMapper, ItemSaveResponseDto.class);

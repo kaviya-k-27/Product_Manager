@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Product</title>
+</head>
+<body>
+
+<h2>Create Product</h2>
+
+<input type="text" id="name" placeholder="Name"><br><br>
+<input type="text" id="description" placeholder="Description"><br><br>
+<input type="number" id="price" placeholder="Price"><br><br>
+
+<select id="category"></select><br><br>
+
+<input type="file" id="image"><br><br>
+
+<button onclick="saveProduct()">Save</button>
+
+<script>
+
+let token = "";
+
+// 🔐 Get Token
+async function getToken() {
+    const res = await fetch("http://localhost:8082/api-proxy/auth", {
+        method: "POST"
+    });
+    const data = await res.json();
+    token = data.token;
+}
+
+// 📂 Load Categories
+async function loadCategories() {
+    const res = await fetch("http://localhost:8082/api-proxy/items/categories", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
+
+    const data = await res.json();
+    const dropdown = document.getElementById("category");
+
+    data.forEach(cat => {
+        dropdown.innerHTML += `<option>${cat}</option>`;
+    });
+}
+
+// ➕ Save Product
+async function saveProduct() {
+
+    const product = {
+        name: document.getElementById("name").value,
+        description: document.getElementById("description").value,
+        price: document.getElementById("price").value,
+        category: document.getElementById("category").value
+    };
+
+    const res = await fetch("http://localhost:8082/api-proxy/items/save", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(product)
+    });
+
+    const result = await res.json();
+
+    alert("Product Saved!");
+
+    // Upload Image
+    const file = document.getElementById("image").files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        await fetch(`http://localhost:8082/api-proxy/items/upload?id=${result.id}`, {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + token
+            },
+            body: formData
+        });
+    }
+}
+
+// 🚀 Init
+async function init() {
+    await getToken();
+    await loadCategories();
+}
+
+init();
+
+</script>
+
+</body>
+</html>

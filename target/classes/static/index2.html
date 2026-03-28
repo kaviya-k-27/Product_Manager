@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Test</title>
+</head>
+<body>
+
+<h2>Add Product</h2>
+
+<input id="name" placeholder="Name"><br>
+
+<select id="category">
+    <option value="">Select Category</option>
+</select><br>
+
+<input id="price" placeholder="Price"><br>
+
+<button onclick="saveProduct()">Save Product</button>
+
+<h3>Upload Image</h3>
+<input type="file" id="file">
+<input id="itemId" placeholder="Item ID">
+<button onclick="uploadImage()">Upload</button>
+
+<h3>Products</h3>
+<button onclick="loadProducts()">Load Products</button>
+
+<pre id="output"></pre>
+
+<script>
+const BASE_URL = "http://localhost:8082";
+
+// 🔥 LOAD CATEGORIES (IMPORTANT)
+async function loadCategories() {
+    const res = await fetch(BASE_URL + "/api-proxy/items/categories");
+    const data = await res.json();
+
+    const dropdown = document.getElementById("category");
+    dropdown.innerHTML = '<option value="">Select Category</option>';
+
+    data.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat.categoryId;
+        option.text = cat.name;
+        dropdown.appendChild(option);
+    });
+}
+
+// ✅ SAVE PRODUCT
+async function saveProduct() {
+    const name = document.getElementById("name").value;
+    const categoryId = document.getElementById("category").value;
+    const price = document.getElementById("price").value;
+
+    if (!name || !categoryId || !price) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    const res = await fetch(BASE_URL + "/items/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name: name,
+            categoryId: parseInt(categoryId),
+            price: parseFloat(price)
+        })
+    });
+
+    const data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+// ✅ LOAD PRODUCTS
+async function loadProducts() {
+    const res = await fetch(BASE_URL + "/api-proxy/items");
+    const data = await res.json();
+
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+// ✅ UPLOAD IMAGE
+async function uploadImage() {
+    const fileInput = document.getElementById("file");
+    const itemId = document.getElementById("itemId").value;
+
+    if (!fileInput.files[0] || !itemId) {
+        alert("Select file and enter itemId");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("itemId", itemId);
+
+    const res = await fetch(BASE_URL + "/api-proxy/items/upload", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+// 🔥 CALL ON LOAD
+loadCategories();
+
+</script>
+
+</body>
+</html>

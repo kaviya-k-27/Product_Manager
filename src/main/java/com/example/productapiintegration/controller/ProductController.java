@@ -51,18 +51,19 @@ public class ProductController {
     public ResponseEntity<byte[]> getProductImage(@PathVariable Long itemId) {
         ProductImageResponse image = productService.getProductImage(itemId);
 
+        // Return 204 No Content if image is empty — frontend shows placeholder
+        if (image.bytes() == null || image.bytes().length == 0) {
+            return ResponseEntity.noContent().build();
+        }
+
         HttpHeaders headers = new HttpHeaders();
         if (image.contentType() != null && !image.contentType().isBlank()) {
             try {
                 headers.setContentType(MediaType.parseMediaType(image.contentType()));
-            } catch (Exception ignored) {
-                // If contentType isn't parseable, fall back to default.
-            }
+            } catch (Exception ignored) {}
         }
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(image.bytes());
+        return ResponseEntity.ok().headers(headers).body(image.bytes());
     }
 
     @Operation(summary = "Save a product (JSON)")
